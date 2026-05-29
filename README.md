@@ -52,6 +52,58 @@
 
 <img width="1421" height="231" alt="image" src="https://github.com/user-attachments/assets/94bf455a-05a4-48f7-b7c3-2bd5bae5054c" />
 
+Great question — you did the same deployment two different ways. Let me explain the difference simply.
+
+Both kubectl apply and helm install end up creating the exact same things in your cluster (Deployment, Service, ConfigMap, Secret, etc.). The difference is how you manage them.
+
+1️⃣ kubectl apply -f — the manual way (what you did first)
+You pointed kubectl at each YAML file one by one:
+
+
+kubectl apply -f k8s/storageclass.yaml
+kubectl apply -f k8s/config-and-secret.yaml
+kubectl apply -f k8s/mongodb-statefulset.yaml
+kubectl apply -f k8s/app-deployment.yaml
+Characteristics:
+
+📄 Each file is separate — you apply them individually
+✍️ Values are hardcoded inside the YAML (e.g. image: nanineelapu/hospital-app:1.0.0, replicas: 2)
+🔧 To change something, you edit the raw YAML every time (remember the sed find-replace you had to do?)
+❌ No single "package", no versioning, no easy rollback
+Think of it as installing software by copying files manually.
+
+2️⃣ helm install — the packaged way (what you did second)
+You installed one chart that bundles everything:
+
+
+helm install hospital ./hospital-chart
+Characteristics:
+
+📦 All YAML files are bundled into one chart (the hospital-chart folder)
+🎛️ All settings live in ONE file — values.yaml (image, replicas, ports, etc.). The templates have no hardcoded values.
+🔧 To change something, you edit values.yaml only (or --set app.replicas=1) — no editing individual files
+✅ It's a named release (hospital) — you can helm upgrade, helm rollback, helm uninstall as one unit
+🔁 Versioned and repeatable
+Think of it as installing software with a proper installer/package manager (like apt or an .msi).
+
+Side-by-side
+kubectl apply	helm install
+Unit	Individual YAML files	One chart (package)
+Where settings live	Hardcoded in each YAML	Centralized in values.yaml
+Change a value	Edit raw YAML / sed	Edit values.yaml
+Upgrade	Re-apply files	helm upgrade
+Rollback	Manual	helm rollback (1 command)
+Uninstall	Delete each file	helm uninstall hospital
+Analogy	Copying files by hand	App installer / package manager
+Why your case study wants Helm
+Phase 9 says "No hardcoded values" and "reusable". That's exactly what Helm gives you — every configurable value is externalized to values.yaml. kubectl apply can't do that; the values are baked into the files.
+
+⚠️ That's also why you deleted the kubectl version first (kubectl delete -f ...) before helm install — otherwise both would try to manage the same Deployment/Service and clash. Only one should own them at a time. Now Helm owns them.
+
+In one line: kubectl apply = manually applying loose YAML files; helm install = installing one configurable, versioned, reusable package that produces the same Kubernetes objects. Helm is the production-grade approach your case study is grading on.
+
+Want to move on to Step 16 (Pull Request) next?
+
 Step 0 — Fix the replica count (do this first)
 Open hospital-chart/values.yaml on the VM:
 
